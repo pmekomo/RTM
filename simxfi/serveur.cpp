@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <pthread.h>
+#include <vector>
 
 using namespace std;
 
@@ -18,6 +19,8 @@ void error(const char *msg)
 }
 void *listen_handler(void *socket_desc);
 void *connection_handler(void *socket_desc);
+void *message_handler(void *param);
+vector <pthread_t> clients_tab;
 int main(int argc, char *argv[])
 {
 
@@ -51,7 +54,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
+	pthread_t msg_thread;
+	if (pthread_create (&msg_thread, NULL, message_handler, NULL) <0)
+	{
+		perror("could not create messages thread");
+		return 2;
+	}
+	
 	pthread_join(client_thread, NULL);
+	pthread_join(msg_thread, NULL);
 		
 	return 0; 
 }
@@ -79,6 +90,7 @@ void *listen_handler(void *socket_desc)
             exit;
         }
         puts("Handler assigned");
+        clients_tab.push_back(new_thread);
 	}
 	if (newsockfd < 0)
 		error("ERROR on accept");
@@ -107,4 +119,21 @@ void *connection_handler(void *socket_desc)
 		perror("recv failed");
 	}
     return 0;
+}
+
+void *message_handler(void *param)
+{
+	char buffer[255];
+	do
+	{
+		cin>>buffer;
+		for (int i = 0; i<clients_tab.size(); i++)
+		{
+			cout<<clients_tab[i];
+			pthread_t client = clients_tab[i];
+			if (write(client,buffer,strlen(buffer))<0)
+				perror("error of broadcasting message");
+		}
+	}while(1);
+	
 }
