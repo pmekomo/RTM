@@ -20,7 +20,7 @@ void error(const char *msg)
 void *listen_handler(void *socket_desc);
 void *connection_handler(void *socket_desc);
 void *message_handler(void *param);
-vector <pthread_t> clients_tab;
+vector <int> clients_tab;
 int main(int argc, char *argv[])
 {
 
@@ -90,7 +90,7 @@ void *listen_handler(void *socket_desc)
             exit;
         }
         puts("Handler assigned");
-        clients_tab.push_back(new_thread);
+        clients_tab.push_back(newsockfd);
 	}
 	if (newsockfd < 0)
 		error("ERROR on accept");
@@ -127,11 +127,10 @@ void *message_handler(void *param)
 	do
 	{
 		cin>>buffer;
+		cout<<buffer;
 		for (int i = 0; i<clients_tab.size(); i++)
 		{
-			cout<<clients_tab[i];
-			pthread_t client = clients_tab[i];
-			if (write(client,buffer,strlen(buffer))<0)
+			if (send(clients_tab[i],buffer,strlen(buffer), 0)<0)
 				perror("error of broadcasting message");
 		}
 	}while(1);
