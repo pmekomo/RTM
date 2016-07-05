@@ -17,10 +17,19 @@ void error(const char *msg)
     perror(msg);
     exit(1);
 }
+
+vector <int> clients_tab;
+void erase_client(int elem)
+{
+	int i = 0;
+	while ((clients_tab[i] != elem) && (i<clients_tab.size()))
+		i++;
+	if(i<clients_tab.size())
+		clients_tab.erase(clients_tab.begin() + i);
+}
 void *listen_handler(void *socket_desc);
 void *connection_handler(void *socket_desc);
 void *message_handler(void *param);
-vector <int> clients_tab;
 int main(int argc, char *argv[])
 {
 
@@ -109,6 +118,7 @@ void *connection_handler(void *socket_desc)
 		send(sock,client_message,n,0);
 	}
 	close(sock);
+	erase_client(sock);
 
 	if(n==0)
 	{
@@ -127,7 +137,6 @@ void *message_handler(void *param)
 	do
 	{
 		cin>>buffer;
-		cout<<buffer;
 		for (int i = 0; i<clients_tab.size(); i++)
 		{
 			if (send(clients_tab[i],buffer,strlen(buffer), 0)<0)
