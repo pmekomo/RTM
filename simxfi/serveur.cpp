@@ -9,6 +9,7 @@
 #include <fstream>
 #include <pthread.h>
 #include <vector>
+#include "Equipement.h"
 
 using namespace std;
 
@@ -18,11 +19,11 @@ void error(const char *msg)
     exit(1);
 }
 
-vector <int> clients_tab;
+vector <Equipement> clients_tab;
 void erase_client(int elem)
 {
 	int i = 0;
-	while ((clients_tab[i] != elem) && (i<clients_tab.size()))
+	while ((clients_tab[i].num_sock != elem) && (i<clients_tab.size()))
 		i++;
 	if(i<clients_tab.size())
 		clients_tab.erase(clients_tab.begin() + i);
@@ -95,11 +96,15 @@ void *listen_handler(void *socket_desc)
 		*client_sock = newsockfd;
 		if (pthread_create (&new_thread, NULL, connection_handler, (void*) client_sock) < 0)
 		{
-            perror("could not create thread");
-            exit;
-        }
-        puts("Handler assigned");
-        clients_tab.push_back(newsockfd);
+			perror("could not create thread");
+			exit;
+		}
+        	puts("Handler assigned");
+		if (newsockfd >= 0)
+		{
+			Equipement eqtmp(newsockfd);
+        		clients_tab.push_back(eqtmp);
+		}
 	}
 	if (newsockfd < 0)
 		error("ERROR on accept");
@@ -139,7 +144,7 @@ void *message_handler(void *param)
 		cin>>buffer;
 		for (int i = 0; i<clients_tab.size(); i++)
 		{
-			if (send(clients_tab[i],buffer,strlen(buffer), 0)<0)
+			if (send(clients_tab[i].num_sock,buffer,strlen(buffer), 0)<0)
 				perror("error of broadcasting message");
 		}
 	}while(1);
