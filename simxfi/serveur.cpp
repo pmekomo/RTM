@@ -9,7 +9,7 @@
 #include <fstream>
 #include <pthread.h>
 #include <vector>
-#include "Equipement.h"
+#include "equipement.h"
 
 using namespace std;
 
@@ -23,7 +23,7 @@ vector <Equipement> clients_tab;
 void erase_client(int elem)
 {
 	int i = 0;
-	while ((clients_tab[i].num_sock != elem) && (i<clients_tab.size()))
+	while ((clients_tab[i].getNumSock() != elem) && (i<clients_tab.size()))
 		i++;
 	if(i<clients_tab.size())
 		clients_tab.erase(clients_tab.begin() + i);
@@ -119,8 +119,8 @@ void *connection_handler(void *socket_desc)
 	char sendBuff[100], client_message[2000];
 
 	while((n=recv(sock,client_message,2000,0))>0)
-    {
-		send(sock,client_message,n,0);
+	{
+		cout<<client_message<<endl;
 	}
 	close(sock);
 	erase_client(sock);
@@ -144,7 +144,7 @@ void *message_handler(void *param)
 		cin>>buffer;
 		for (int i = 0; i<clients_tab.size(); i++)
 		{
-			if (send(clients_tab[i].num_sock,buffer,strlen(buffer), 0)<0)
+			if (send(clients_tab[i].getNumSock(),buffer,strlen(buffer), 0)<0)
 				perror("error of broadcasting message");
 		}
 	}while(1);

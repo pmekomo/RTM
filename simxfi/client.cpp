@@ -24,31 +24,31 @@ int main(int argc, char *argv[])
 {
 
 //--------------INITIALISATION DU SOCKET ET CONNECTION------------------
-    int sockfd, portno, *tmp_sock;
-    struct sockaddr_in serv_addr;
-    struct hostent *server;
+	int sockfd, portno, *tmp_sock;
+	struct sockaddr_in serv_addr;
+	struct hostent *server;
 
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
-    }
-    portno = atoi(argv[2]);
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        error("ERROR opening socket");
-    server = gethostbyname(argv[1]);
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
+	if (argc < 3) {
+		fprintf(stderr,"usage %s hostname port [connection_type]\n", argv[0]);
+		exit(0);
+	}
+	portno = atoi(argv[2]);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0) 
+		error("ERROR opening socket");
+	server = gethostbyname(argv[1]);
+	if (server == NULL) {
+		fprintf(stderr,"ERROR, no such host\n");
+		exit(0);
+	}
+	bzero((char *) &serv_addr, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	bcopy((char *)server->h_addr, 
          (char *)&serv_addr.sin_addr.s_addr,
          server->h_length);
-    serv_addr.sin_port = htons(portno);
-    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
-        error("ERROR connecting");
+	serv_addr.sin_port = htons(portno);
+	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+		error("ERROR connecting");
 //**********************************************************************
 
 	pthread_t msg_thread;
@@ -60,16 +60,16 @@ int main(int argc, char *argv[])
 		perror("could not create messages thread");
 	}
     
-    pthread_t listen_thread;
-    if(pthread_create(&listen_thread, NULL, listen_handler, (void*)tmp_sock)<0)
-    {
+	pthread_t listen_thread;
+	if(pthread_create(&listen_thread, NULL, listen_handler, (void*)tmp_sock)<0)
+	{
 		perror("could not create listening thread");
 	}
         
 	pthread_join(msg_thread, NULL);
 	pthread_join(listen_thread, NULL); 
     
-    return 0;
+	return 0;
 }
 
 void *message_handler(void *socket_desc)
@@ -78,7 +78,7 @@ void *message_handler(void *socket_desc)
 	//Get the socket descriptor
 	int sock = *(int*)socket_desc;
 	char buffer[256];
-    scanf("%s",buffer);
+	scanf("%s",buffer);
 	int n = write(sock,buffer,strlen(buffer));
 	bzero(buffer,256);
 	n = read(sock,buffer,255);
@@ -97,7 +97,7 @@ void *listen_handler(void *socket_desc)
 	char server_message[2000];
 
 	while((n=recv(sock,server_message,2000,0))>0)
-    {
+	{
 		cout<<server_message<<endl;
 		bzero(server_message, strlen(server_message));
 	}
@@ -111,5 +111,5 @@ void *listen_handler(void *socket_desc)
 		perror("recv failed");
 	}
 	close(sock);
-    return 0;
+	return 0;
 }
