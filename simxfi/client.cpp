@@ -53,8 +53,14 @@ int main(int argc, char *argv[])
 
 	pthread_t msg_thread;
 	
-	tmp_sock = (int*)malloc(sizeof(int));
-	*tmp_sock = sockfd;
+	tmp_sock = (int*)malloc(2*sizeof(int));
+	tmp_sock[0] = sockfd;
+	if (argc == 4)
+		if (strcmp(argv[3], "nocast") == 0)
+			tmp_sock[1] = 1;
+	else
+		tmp_sock[1] = 0;
+
 	if (pthread_create(&msg_thread, NULL, message_handler, (void*)tmp_sock)<0)
 	{
 		perror("could not create messages thread");
@@ -76,19 +82,28 @@ void *message_handler(void *socket_desc)
 {
 	
 	//Get the socket descriptor
-	int sock = *(int*)socket_desc;
+	int *sock = (int*)socket_desc;
 	char buffer[256];
 	int n;
-	do
+
+	//Envoi du type de connection au serveur
+	if (sock[1] == 1)
+		strcpy(buffer, "nocast");
+	else
+		strcpy(buffer, "normal");
+	n = write(sock[0],buffer,strlen(buffer));
+	bzero(buffer, strlen(buffer));
+
+	//Envoi de messages au serveur
+	while(n>=0)
 	{
 		cin>>buffer;
-		n = write(sock,buffer,strlen(buffer));
+		n = write(sock[0],buffer,strlen(buffer));
 		bzero(buffer, strlen(buffer));
 	}
-	while(n>=0);
 	
 	if (n < 0) error("ERROR reading from socket");
-	close(sock);
+	close(sock[0]);
 }
 
 void *listen_handler(void *socket_desc)

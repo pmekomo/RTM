@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
 	return 0; 
 }
 
+//Pour gérer les clients qui se connectent au serveur un client = un thread
 void *listen_handler(void *socket_desc)
 {
 	
@@ -118,6 +119,12 @@ void *connection_handler(void *socket_desc)
 	int n;
 
 	char sendBuff[100], client_message[2000];
+	
+	n = read(sock, client_message, 2000);
+	cout<<"Client connected in "<<client_message<<" mode"<<endl;
+	if (strcmp(client_message, "nocast")== 0)
+		erase_client(sock);
+	bzero(client_message, strlen(client_message));
 
 	while((n=recv(sock,client_message,2000,0))>0)
 	{
