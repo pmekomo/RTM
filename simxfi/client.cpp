@@ -78,11 +78,14 @@ void *message_handler(void *socket_desc)
 	//Get the socket descriptor
 	int sock = *(int*)socket_desc;
 	char buffer[256];
-	scanf("%s",buffer);
-	int n = write(sock,buffer,strlen(buffer));
-	bzero(buffer,256);
-	n = read(sock,buffer,255);
-	cout<<buffer<<endl;
+	int n;
+	do
+	{
+		cin>>buffer;
+		n = write(sock,buffer,strlen(buffer));
+		bzero(buffer, strlen(buffer));
+	}
+	while(n>=0);
 	
 	if (n < 0) error("ERROR reading from socket");
 	close(sock);

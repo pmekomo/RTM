@@ -110,6 +110,7 @@ void *listen_handler(void *socket_desc)
 		error("ERROR on accept");
 }
 
+//pour ecouter les messages des clients
 void *connection_handler(void *socket_desc)
 {
 	//Get the socket descriptor
@@ -121,6 +122,7 @@ void *connection_handler(void *socket_desc)
 	while((n=recv(sock,client_message,2000,0))>0)
 	{
 		cout<<client_message<<endl;
+		bzero(client_message, strlen(client_message));
 	}
 	close(sock);
 	erase_client(sock);
@@ -136,6 +138,7 @@ void *connection_handler(void *socket_desc)
     return 0;
 }
 
+//pour envoyer des messages aux clients
 void *message_handler(void *param)
 {
 	char buffer[255];
