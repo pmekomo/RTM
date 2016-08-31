@@ -1,7 +1,7 @@
-#include "file.h"
+#include "files.h"
 
 
-int send_file(int socket, char fileName){
+int send_file(int socket, char *fileName){
 
 	FILE *file;
 	int size, read_size, stat;
@@ -12,7 +12,8 @@ int send_file(int socket, char fileName){
 	//Getting file Size   
 	if(file == NULL) {
 		printf("Error Opening file");
-	 } 
+		return 0;
+	} 
 
 	fseek(file, 0, SEEK_END);
 	size = ftell(file);
@@ -46,9 +47,10 @@ int send_file(int socket, char fileName){
 		//Zero out our send buffer
 		bzero(send_buffer, sizeof(send_buffer));
 	}
+	return 1;
 }
 
-int receive_file(int socket, char fileName)
+int receive_file(int socket, char *fileName)
 { 
 
 	int buffersize = 0, recv_size = 0,size = 0, read_size, write_size, packet_index =1,stat;

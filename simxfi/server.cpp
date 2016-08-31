@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <vector>
 #include "equipement.h"
+#include "files.h"
 
 using namespace std;
 
@@ -18,6 +19,15 @@ void error(const char *msg)
     perror(msg);
     exit(1);
 }
+
+void rename_file(char *fileName, int num)
+{
+	char number[256];
+	sprintf(number, "%d", num);
+	strcat (fileName, "-");
+	strcat (fileName, number);
+	strcat(fileName, ".xml");
+}	
 
 vector <Equipement> clients_tab;
 void erase_client(int elem)
@@ -118,8 +128,11 @@ void *connection_handler(void *socket_desc)
 	int sock = *(int*)socket_desc;
 	int n;
 
-	char sendBuff[100], client_message[2000];
+	char sendBuff[100], client_message[2000], fileName[1024];
 	
+	//File Name
+	strcpy(fileName, "file");
+
 	n = read(sock, client_message, 2000);
 	cout<<"Client connected in "<<client_message<<" mode"<<endl;
 	if (strcmp(client_message, "nocast")== 0)
@@ -129,6 +142,15 @@ void *connection_handler(void *socket_desc)
 	while((n=recv(sock,client_message,2000,0))>0)
 	{
 		cout<<client_message<<endl;
+		if (strcmp(client_message, "sending") == 0)
+		{
+			rename_file(fileName, sock);
+			cout<<"Establishing of file "<<fileName<<endl;
+			if (receive_file(sock, fileName)>0)
+				cout<<"reception succeed"<<endl;
+			else
+				cout<<"reception failed"<<endl;
+		}
 		bzero(client_message, strlen(client_message));
 	}
 	close(sock);

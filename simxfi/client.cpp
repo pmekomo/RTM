@@ -9,6 +9,8 @@
 #include <fstream>
 #include <string.h>
 #include <pthread.h>
+#include "files.h"
+#include <time.h>
 
 using namespace std;
 
@@ -110,17 +112,35 @@ void *listen_handler(void *socket_desc)
 {
 	//Get the socket descriptor
 	int sock = *(int*)socket_desc;
-	int n;
+	int n, r;
 
-	char server_message[2000];
+	char server_message[2000],sending_buffer[2000], fileName[1024];
 
-	while((n=recv(sock,server_message,2000,0))>0)
+	//File name
+	strcpy(fileName, "xmlFiles/file.xml");
+
+	//Sending Message
+	strcpy (sending_buffer, "sending");
+
+	while((r=recv(sock,server_message,2000,0))>0)
 	{
 		cout<<server_message<<endl;
+		if (strcmp (server_message, "state") == 0)
+		{
+			if (write(sock,sending_buffer,strlen(sending_buffer))>=0)
+			{
+				if (send_file (sock, fileName))
+					cout<<"send succeed-------"<<endl;
+				else
+					cout<<"send failed--------"<<endl;
+			}
+			else
+				cout<<"Server unreachabled"<<endl;
+		}
 		bzero(server_message, strlen(server_message));
 	}
 
-	if(n==0)
+	if(r==0)
 	{
 		puts("Server Disconnected");
 	}
