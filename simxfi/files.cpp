@@ -15,9 +15,10 @@ int send_file(int socket, char *fileName){
 		return 0;
 	} 
 
-	fseek(file, 0, SEEK_END);
-	size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	//Obtention de la taille du fichier
+	fseek(file, 0, SEEK_END); //on met le pointeur à la fin du fichier
+	size = ftell(file); //On obtient la valeur qui est la taille en octet
+	fseek(file, 0, SEEK_SET); //on remet le pointeur à la position initiale
 	printf("Total file size: %i\n",size);
 
 	//Send file Size
@@ -53,6 +54,7 @@ int send_file(int socket, char *fileName){
 int receive_file(int socket, char *fileName)
 { 
 
+	printf("debuuuuuut\n");
 	int buffersize = 0, recv_size = 0,size = 0, read_size, write_size, packet_index =1,stat;
 
 	char imagearray[10241],verify = '1';
@@ -60,13 +62,17 @@ int receive_file(int socket, char *fileName)
 
 	//Find the size of the file
 	do{
+		printf("on est là\n");
 		stat = read(socket, &size, sizeof(int));
+		printf("%i----\n",stat);
 	}while(stat<0);
 
+	printf("Que passa");
 	char buffer[] = "Got it";
 	//Send our verification signal
 	do{
 		stat = write(socket, &buffer, sizeof(int));
+		printf("%i----\n",stat);
 	}while(stat<0);
 
 	printf("Reply sent\n");

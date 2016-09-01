@@ -142,7 +142,11 @@ void *connection_handler(void *socket_desc)
 	while((n=recv(sock,client_message,2000,0))>0)
 	{
 		cout<<client_message<<endl;
-		if (strcmp(client_message, "sending") == 0)
+		char tmp[2000];
+		strcpy(tmp, "sending");
+		int n = strcmp(tmp, tmp);
+		cout<<n<<"----------"<<endl;
+		if (n == 0)
 		{
 			rename_file(fileName, sock);
 			cout<<"Establishing of file "<<fileName<<endl;
@@ -151,6 +155,8 @@ void *connection_handler(void *socket_desc)
 			else
 				cout<<"reception failed"<<endl;
 		}
+		else
+			cout<<"che ne compwrend paw"<<endl;
 		bzero(client_message, strlen(client_message));
 	}
 	close(sock);
