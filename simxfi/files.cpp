@@ -54,7 +54,6 @@ int send_file(int socket, char *fileName){
 int receive_file(int socket, char *fileName)
 { 
 
-	printf("debuuuuuut\n");
 	int buffersize = 0, recv_size = 0,size = 0, read_size, write_size, packet_index =1,stat;
 
 	char imagearray[10241],verify = '1';
@@ -62,12 +61,9 @@ int receive_file(int socket, char *fileName)
 
 	//Find the size of the file
 	do{
-		printf("on est là\n");
 		stat = read(socket, &size, sizeof(int));
-		printf("%i----\n",stat);
 	}while(stat<0);
 
-	printf("Que passa");
 	char buffer[] = "Got it";
 	//Send our verification signal
 	do{

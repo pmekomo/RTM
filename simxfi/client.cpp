@@ -114,20 +114,21 @@ void *listen_handler(void *socket_desc)
 	int sock = *(int*)socket_desc;
 	int n, r;
 
-	char server_message[2000],sending_buffer[2000], fileName[1024];
+	char server_message[2000], *sending_buffer, fileName[1024];
 
 	//File name
 	strcpy(fileName, "xmlFiles/file.xml");
 
 	//Sending Message
-	strcpy (sending_buffer, "sending");
+	strcpy (sending_buffer, "ok");
 
-	while((r=recv(sock,server_message,2000,0))>0)
+	while((r=read(sock,server_message,2000))>0)
 	{
 		cout<<server_message<<endl;
+		cout<<strlen(sending_buffer)<<"----"<<endl;
 		if (strcmp (server_message, "state") == 0)
 		{
-			if (write(sock,sending_buffer,strlen(sending_buffer))>=0)
+			if (send(sock,sending_buffer,strlen(sending_buffer), 0)>=0)
 			{
 				if (send_file (sock, fileName))
 					cout<<"send succeed-------"<<endl;

@@ -11,6 +11,7 @@
 #include <vector>
 #include "equipement.h"
 #include "files.h"
+#include "utile.h"
 
 using namespace std;
 
@@ -128,10 +129,11 @@ void *connection_handler(void *socket_desc)
 	int sock = *(int*)socket_desc;
 	int n;
 
-	char sendBuff[100], client_message[2000], fileName[1024];
+	char client_message[2000], fileName[1024];
 	
 	//File Name
 	strcpy(fileName, "file");
+	rename_file(fileName, sock);
 
 	n = read(sock, client_message, 2000);
 	cout<<"Client connected in "<<client_message<<" mode"<<endl;
@@ -139,21 +141,16 @@ void *connection_handler(void *socket_desc)
 		erase_client(sock);
 	bzero(client_message, strlen(client_message));
 
-	while((n=recv(sock,client_message,2000,0))>0)
+	while((n=read(sock,client_message,2000))>0)
 	{
 		cout<<client_message<<endl;
-		char tmp[2000];
-		strcpy(tmp, "sending");
-		int n = strcmp(tmp, tmp);
-		cout<<n<<"----------"<<endl;
-		if (n == 0)
+		if (mystrcmp(client_message, "ok") == 0)
 		{
-			rename_file(fileName, sock);
 			cout<<"Establishing of file "<<fileName<<endl;
 			if (receive_file(sock, fileName)>0)
-				cout<<"reception succeed"<<endl;
+				cout<<"reception succeed------"<<endl;
 			else
-				cout<<"reception failed"<<endl;
+				cout<<"reception failed------"<<endl;
 		}
 		else
 			cout<<"che ne compwrend paw"<<endl;
