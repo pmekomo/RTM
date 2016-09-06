@@ -2,7 +2,7 @@
 
 int mystrcmp(char * ch1, const char *ch2)
 {
-	int i = 0;
+	unsigned int i = 0;
 	while((ch1[i]!='\0') && (ch1[i]== ch2[i]))
 		i++;
 	if (i == strlen(ch2))

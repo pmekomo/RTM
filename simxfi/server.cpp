@@ -33,7 +33,7 @@ void rename_file(char *fileName, int num)
 vector <Equipement> clients_tab;
 void erase_client(int elem)
 {
-	int i = 0;
+	unsigned int i = 0;
 	while ((clients_tab[i].getNumSock() != elem) && (i<clients_tab.size()))
 		i++;
 	if(i<clients_tab.size())
@@ -109,7 +109,7 @@ void *listen_handler(void *socket_desc)
 		if (pthread_create (&new_thread, NULL, connection_handler, (void*) client_sock) < 0)
 		{
 			perror("could not create thread");
-			exit;
+			exit(1);
 		}
         	puts("Handler assigned");
 		if (newsockfd >= 0)
@@ -141,43 +141,48 @@ void *connection_handler(void *socket_desc)
 		erase_client(sock);
 	bzero(client_message, strlen(client_message));
 
-	while((n=read(sock,client_message,2000))>0)
+	while((n = read(sock,client_message,2000)) > 0)
 	{
 		cout<<client_message<<endl;
-		if (mystrcmp(client_message, "ok") == 0)
+		if (mystrcmp(client_message, "eqstate") == 0)
 		{
 			cout<<"Establishing of file "<<fileName<<endl;
-			if (receive_file(sock, fileName)>0)
-				cout<<"reception succeed------"<<endl;
+			if (receive_file(sock, fileName) > 0)
+				cout<<"reception succeeded------"<<endl;
 			else
 				cout<<"reception failed------"<<endl;
 		}
+		if (mystrcmp(client_message, "ecbstate") == 0)
+		{
+			cout<<"Sending of file ecb.xml"<<endl;
+			if (send_file(sock, "xmlFiles/ecb.xml") > 0)
+				cout<<"sending succeeded------"<<endl;
+			else
+				cout<<"sending failed------"<<endl;
+		}
 		else
-			cout<<"che ne compwrend paw"<<endl;
+			cout<<"???"<<endl;
 		bzero(client_message, strlen(client_message));
 	}
 	close(sock);
 	erase_client(sock);
 
-	if(n==0)
-	{
+	if(n == 0)
 		puts("Client Disconnected");
-	}
 	else
-	{
 		perror("recv failed");
-	}
+
     return 0;
 }
 
 //pour envoyer des messages aux clients
-void *message_handler(void *param)
+void *message_handler(void*)
 {
 	char buffer[255];
 	do
 	{
 		cin>>buffer;
-		for (int i = 0; i<clients_tab.size(); i++)
+		for (unsigned int i = 0; i<clients_tab.size(); i++)
 		{
 			if (send(clients_tab[i].getNumSock(),buffer,strlen(buffer), 0)<0)
 				perror("error of broadcasting message");

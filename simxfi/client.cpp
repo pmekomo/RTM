@@ -126,14 +126,26 @@ void *listen_handler(void *socket_desc)
 	{
 		cout<<server_message<<endl;
 		cout<<strlen(sending_buffer)<<"----"<<endl;
-		if (strcmp (server_message, "state") == 0)
+		if (strcmp (server_message, "eqstate") == 0)
 		{
-			if (send(sock,sending_buffer,strlen(sending_buffer), 0)>=0)
+			if (send(sock,server_message,strlen(server_message), 0) >= 0)
 			{
 				if (send_file (sock, fileName))
-					cout<<"send succeed-------"<<endl;
+					cout<<"send succeeded-------"<<endl;
 				else
 					cout<<"send failed--------"<<endl;
+			}
+			else
+				cout<<"Server unreachabled"<<endl;
+		}
+		if (strcmp (server_message, "ecbstate") == 0)
+		{
+			if (send(sock,server_message,strlen(server_message), 0) >= 0)
+			{
+				if (receive_file(sock, "xmlFiles/myecb.xml") > 0)
+					cout<<"reception succeeded-------"<<endl;
+				else
+					cout<<"reception failed------"<<endl;
 			}
 			else
 				cout<<"Server unreachabled"<<endl;
@@ -142,13 +154,11 @@ void *listen_handler(void *socket_desc)
 	}
 
 	if(r==0)
-	{
 		puts("Server Disconnected");
-	}
 	else
-	{
 		perror("recv failed");
-	}
+
 	close(sock);
+
 	return 0;
 }

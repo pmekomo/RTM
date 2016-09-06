@@ -11,8 +11,8 @@ int send_file(int socket, char *fileName){
 	
 	//Getting file Size   
 	if(file == NULL) {
-		printf("Error Opening file");
-		return 0;
+		printf("Error Opening file !!!\n");
+		exit(0);
 	} 
 
 	//Obtention de la taille du fichier
@@ -23,7 +23,10 @@ int send_file(int socket, char *fileName){
 
 	//Send file Size
 	printf("Sending file Size\n");
-	write(socket, (void *)&size, sizeof(int));
+	do
+	{
+		stat = write(socket, (void *)&size, sizeof(int));
+	}while(stat<0);
 
 	//Send file as Byte Array
 	printf("Sending file as Byte Array\n");
@@ -34,7 +37,7 @@ int send_file(int socket, char *fileName){
 	} while (stat < 0);
 
 	printf("Received data in socket\n");
-	printf("Socket data: %c\n", read_buffer);
+	printf("Socket data: %s\n", read_buffer);
 
 	while(!feof(file)) {
 	//Read from the file into our send buffer
@@ -62,13 +65,14 @@ int receive_file(int socket, char *fileName)
 	//Find the size of the file
 	do{
 		stat = read(socket, &size, sizeof(int));
+		printf("%i++++++\n",stat);
 	}while(stat<0);
 
 	char buffer[] = "Got it";
 	//Send our verification signal
 	do{
 		stat = write(socket, &buffer, sizeof(int));
-		printf("%i----\n",stat);
+		printf("%i*****\n",stat);
 	}while(stat<0);
 
 	printf("Reply sent\n");
