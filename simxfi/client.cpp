@@ -11,6 +11,8 @@
 #include <pthread.h>
 #include "files.h"
 #include <time.h>
+#include <sys/stat.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -22,6 +24,7 @@ void error(const char *msg)
 
 void *message_handler(void *socket_desc);
 void *listen_handler(void *socket_desc);
+void *checkfile_handler(void *arg);
 int main(int argc, char *argv[])
 {
 
@@ -58,8 +61,10 @@ int main(int argc, char *argv[])
 	tmp_sock = (int*)malloc(2*sizeof(int));
 	tmp_sock[0] = sockfd;
 	if (argc == 4)
+	{
 		if (strcmp(argv[3], "nocast") == 0)
 			tmp_sock[1] = 1;
+	}
 	else
 		tmp_sock[1] = 0;
 
@@ -73,9 +78,14 @@ int main(int argc, char *argv[])
 	{
 		perror("could not create listening thread");
 	}
+
+	pthread_t checkfile_thread;
+	if (pthread_create(&checkfile_thread, NULL, checkfile_handler, NULL)<0)
+		perror("could not create checkfile thread");
         
 	pthread_join(msg_thread, NULL);
-	pthread_join(listen_thread, NULL); 
+	pthread_join(listen_thread, NULL);
+	pthread_join(checkfile_thread, NULL);
     
 	return 0;
 }
@@ -106,15 +116,16 @@ void *message_handler(void *socket_desc)
 	
 	if (n < 0) error("ERROR reading from socket");
 	close(sock[0]);
+	pthread_exit(NULL);
 }
 
 void *listen_handler(void *socket_desc)
 {
 	//Get the socket descriptor
 	int sock = *(int*)socket_desc;
-	int n, r;
+	int r;
 
-	char server_message[2000], *sending_buffer, fileName[1024];
+	char server_message[2000], *sending_buffer = (char*)"", fileName[1024];
 
 	//File name
 	strcpy(fileName, "xmlFiles/file.xml");
@@ -142,7 +153,7 @@ void *listen_handler(void *socket_desc)
 		{
 			if (send(sock,server_message,strlen(server_message), 0) >= 0)
 			{
-				if (receive_file(sock, "xmlFiles/myecb.xml") > 0)
+				if (receive_file(sock, (char*)"xmlFiles/myecb.xml") > 0)
 					cout<<"reception succeeded-------"<<endl;
 				else
 					cout<<"reception failed------"<<endl;
@@ -160,5 +171,32 @@ void *listen_handler(void *socket_desc)
 
 	close(sock);
 
-	return 0;
+	pthread_exit(NULL);
+}
+
+void *checkfile_handler(void* arg)
+{
+	struct stat sb;
+	char *init_time = (char*)"";
+
+
+	strcpy (init_time, "");
+	//pour enlever le warning
+	(void) arg;
+	
+	while(stat("xmlFiles/file.xml", &sb) != -1) 
+	{
+		if (strlen(init_time) == 0)
+			init_time = ctime(&sb.st_mtime);
+		else
+		{
+			if (strcmp(init_time, ctime(&sb.st_mtime)) != 0)
+				/*sigkill(SIGURG);*/
+				printf("modification du fichier\n");
+
+		}
+	}
+
+	perror("stat");
+	pthread_exit(NULL);
 }
