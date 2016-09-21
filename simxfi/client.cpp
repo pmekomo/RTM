@@ -22,6 +22,14 @@ void error(const char *msg)
     exit(0);
 }
 
+int server_sock;
+char fileName[1024];
+
+
+pthread_t msg_thread;
+pthread_t listen_thread;
+pthread_t checkfile_thread;
+
 void *message_handler(void *socket_desc);
 void *listen_handler(void *socket_desc);
 void *checkfile_handler(void *arg);
@@ -55,8 +63,6 @@ int main(int argc, char *argv[])
 	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 		error("ERROR connecting");
 //**********************************************************************
-
-	pthread_t msg_thread;
 	
 	tmp_sock = (int*)malloc(2*sizeof(int));
 	tmp_sock[0] = sockfd;
@@ -73,13 +79,11 @@ int main(int argc, char *argv[])
 		perror("could not create messages thread");
 	}
     
-	pthread_t listen_thread;
 	if(pthread_create(&listen_thread, NULL, listen_handler, (void*)tmp_sock)<0)
 	{
 		perror("could not create listening thread");
 	}
 
-	pthread_t checkfile_thread;
 	if (pthread_create(&checkfile_thread, NULL, checkfile_handler, NULL)<0)
 		perror("could not create checkfile thread");
         
@@ -119,13 +123,42 @@ void *message_handler(void *socket_desc)
 	pthread_exit(NULL);
 }
 
+
+void socket_send(int sig)
+{
+	cout<<"--------states file modified-------"<<endl;
+	if (send(server_sock,"eqstate",7, 0) >= 0)
+	{
+		if (send_file (server_sock, fileName))
+			cout<<"send succeeded-------"<<endl;
+		else
+			cout<<"send failed--------"<<endl;
+	}
+	else
+		cout<<"Server unreachabled"<<endl;
+
+}
+
 void *listen_handler(void *socket_desc)
 {
 	//Get the socket descriptor
-	int sock = *(int*)socket_desc;
+	server_sock = *(int*)socket_desc;
 	int r;
 
-	char server_message[2000], *sending_buffer = (char*)"", fileName[1024];
+	char server_message[2000], *sending_buffer = new char[2048];
+
+	/*struct sigaction sa;
+
+	sa.sa_handler = socket_send;
+	sigemptyset(&sa.sa_mask); 
+	sa.sa_flags=0;
+	sigaction(SIGURG, &sa, 0);*/
+
+	if ((signal(SIGURG, socket_send)) == SIG_ERR)
+	{
+		perror("signal");
+		exit(EXIT_FAILURE);
+	}
 
 	//File name
 	strcpy(fileName, "xmlFiles/file.xml");
@@ -133,15 +166,14 @@ void *listen_handler(void *socket_desc)
 	//Sending Message
 	strcpy (sending_buffer, "ok");
 
-	while((r=read(sock,server_message,2000))>0)
+	while((r=read(server_sock,server_message,2000))>0)
 	{
 		cout<<server_message<<endl;
-		cout<<strlen(sending_buffer)<<"----"<<endl;
 		if (strcmp (server_message, "eqstate") == 0)
 		{
-			if (send(sock,server_message,strlen(server_message), 0) >= 0)
+			if (send(server_sock,server_message,strlen(server_message), 0) >= 0)
 			{
-				if (send_file (sock, fileName))
+				if (send_file (server_sock, fileName))
 					cout<<"send succeeded-------"<<endl;
 				else
 					cout<<"send failed--------"<<endl;
@@ -151,9 +183,9 @@ void *listen_handler(void *socket_desc)
 		}
 		if (strcmp (server_message, "ecbstate") == 0)
 		{
-			if (send(sock,server_message,strlen(server_message), 0) >= 0)
+			if (send(server_sock,server_message,strlen(server_message), 0) >= 0)
 			{
-				if (receive_file(sock, (char*)"xmlFiles/myecb.xml") > 0)
+				if (receive_file(server_sock, (char*)"xmlFiles/myecb.xml") > 0)
 					cout<<"reception succeeded-------"<<endl;
 				else
 					cout<<"reception failed------"<<endl;
@@ -169,7 +201,7 @@ void *listen_handler(void *socket_desc)
 	else
 		perror("recv failed");
 
-	close(sock);
+	close(server_sock);
 
 	pthread_exit(NULL);
 }
@@ -177,24 +209,26 @@ void *listen_handler(void *socket_desc)
 void *checkfile_handler(void* arg)
 {
 	struct stat sb;
-	char *init_time = (char*)"";
-
+	char *init_time = new char[1024];
 
 	strcpy (init_time, "");
-	//pour enlever le warning
+	//to remove warning
 	(void) arg;
 	
 	while(stat("xmlFiles/file.xml", &sb) != -1) 
 	{
 		if (strlen(init_time) == 0)
-			init_time = ctime(&sb.st_mtime);
+			strcpy(init_time, ctime(&sb.st_mtime));
 		else
 		{
 			if (strcmp(init_time, ctime(&sb.st_mtime)) != 0)
-				/*sigkill(SIGURG);*/
-				printf("modification du fichier\n");
-
+			{
+				strcpy(init_time, ctime(&sb.st_mtime));
+				pthread_kill(listen_thread, SIGURG);
+			}
 		}
+
+		sleep(120);
 	}
 
 	perror("stat");

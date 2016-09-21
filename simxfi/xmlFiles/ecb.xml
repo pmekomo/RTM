@@ -1,4 +1,4 @@
-<xfi>
+<?xml version="1.0" encoding="UTF-8"?>
   <event topic="sys" datetime="2013-09-30T19:20:27.785+02:00">
     <state status="running" equipment-id="RTM_ 9991">
       <indicator name="poweroff" value="false"/>
@@ -36,4 +36,3 @@
       </equipment>
     </state>
   </event>
-</xfi>
