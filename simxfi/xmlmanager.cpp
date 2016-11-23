@@ -1,17 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <dirent.h>
-#ifndef WIN32
-	#include <sys/types.h>
-#endif
-
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h> 
-#include <iostream>
-#include <vector>
-#include <libxml/parser.h>
+#include "xmlmanager.h"
 
 using namespace std;
  
@@ -19,6 +6,7 @@ typedef struct xmlFile
 {
 	char name[1024];
 	char creationtime[1024];
+	int indicator; //indicateur permettant de savoir si le fichier est récent
 }xmlFile;
 
 //we manage a table of the current repository files
@@ -33,7 +21,7 @@ int countFiles(void)
 
 	while ((file = readdir(dir)) != NULL)
 	{
-		if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0)
+		if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0 && strcmp(file->d_name, FINAL_FILE) != 0)
 			nbf++;
 	}
 	if (closedir(dir) == -1)
@@ -50,22 +38,26 @@ int init_filesTab (void)
 	struct dirent *file = NULL;
 	
 	filesTab.clear();
-	while((file = readdir(dir)) != NULL)
+	if(dir != NULL)
 	{
-		if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0)
+		while((file = readdir(dir)) != NULL)
 		{
-			xmlFile xmltmp;
-			strcpy(xmltmp.name, "xmlFiles/");
-			strcat(xmltmp.name, file->d_name);
-			if (stat(xmltmp.name, &sb) != -1)
+			if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0 && strcmp(file->d_name, FINAL_FILE) != 0)
 			{
-				strcpy(xmltmp.creationtime, ctime(&sb.st_mtime));
-				filesTab.push_back(xmltmp);
-			}
-			else
-			{
-				cout<<"Stat a échoué"<<endl;
-				return -1;
+				xmlFile xmltmp;
+				strcpy(xmltmp.name, "xmlFiles/");
+				strcat(xmltmp.name, file->d_name);
+				if (stat(xmltmp.name, &sb) != -1)
+				{
+					strcpy(xmltmp.creationtime, ctime(&sb.st_mtime));
+					xmltmp.indicator = 0;
+					filesTab.push_back(xmltmp);
+				}
+				else
+				{
+					cout<<"Stat a échoué"<<endl;
+					return -1;
+				}
 			}
 		}
 	}
@@ -83,41 +75,43 @@ int check_xmlfiles (void)
 	dir = opendir("xmlFiles");
 	struct dirent * file = NULL;
 	struct stat sb;
-	int cmp = 0;
-	while (((file = readdir(dir)) != NULL) && (cmp == 0))
+	int nb_files = filesTab.size(),cmp;
+	while ((file = readdir(dir)) != NULL)
 	{
-		if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0)
+		if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0 && strcmp(file->d_name, FINAL_FILE) != 0)
 		{
 			char tmp[1024];
 			strcpy(tmp, "xmlFiles/");
 			strcat(tmp, file->d_name);
-			int i = 0, j = 0;
-			while(i<filesTab.size())
+			int i = 0, trouve = 0;
+			while(i< nb_files && trouve == 0)
 			{
 				if (strcmp(filesTab[i].name, tmp) == 0)
 				{
+					trouve = 1;
 					if (stat (tmp, &sb) != -1)
 					{
 						cmp = strcmp(filesTab[i].creationtime, ctime(&sb.st_mtime));
-						cout<<"name:"<<filesTab[i].name<<" date:"<<filesTab[i].creationtime<<" now:"<<ctime(&sb.st_mtime)<<endl; 
+						//cout<<"name:"<<filesTab[i].name<<" date:"<<filesTab[i].creationtime<<" now:"<<ctime(&sb.st_mtime)<<endl; 
 						if (cmp != 0)
 						{
 							strcpy(filesTab[i].creationtime, ctime(&sb.st_mtime));
-							return cmp;
+							filesTab[i].indicator = 1;//fichier modifié
 						}
 					}
+					else
+						cout<<"stat failed"<<endl;
 				}
-				else
-					j++;
 				i++;
 			}
-			if (j >= filesTab.size())
+			if (trouve == 0)
 			{
 				xmlFile xmltmp;
 				strcpy(xmltmp.name, tmp);
 				if (stat(xmltmp.name, &sb) != -1)
 				{
 					strcpy(xmltmp.creationtime, ctime(&sb.st_mtime));
+					xmltmp.indicator = 2;//nouveau fichier
 					filesTab.push_back(xmltmp);
 				}
 				else
@@ -138,10 +132,8 @@ void update(char *docName)
 	xmlNodePtr cur, cur2, node, node2, subnode, subnode2, newnode, indnode;
 	char *ptr = NULL;
 	doc = xmlParseFile(docName);
-	doc2 = xmlParseFile("final.xml");
-	char * status;
-	char * equip;
-	char * indicatorValue, * indicatorName;
+	doc2 = xmlParseFile("xmlFiles/final.xml");
+	xmlChar * status, * equip, * indicatorValue, * indicatorName;
 	int modif = 0, eqTrouve = 0, indTrouve = 0;
 	
 	if (doc == NULL) {
@@ -190,25 +182,25 @@ void update(char *docName)
 			{
 				if(!xmlStrcmp(cur2->name, (const xmlChar *) "state"))
 				{
-					if(myStrcmp(xmlGetProp(cur2, (const char*)"equipment-id"), 
-						xmlGetProp(cur, (const char*)"equipment-id")) != 0)
+					if(myStrcmp(xmlGetProp(cur2, (const xmlChar *)"equipment-id"), 
+						xmlGetProp(cur, (const xmlChar *)"equipment-id")) != 0)
 					{
 						//fonction de recherche
-						node2 = rechercheEq(cur2, xmlGetProp(cur, "equipment-id"));
+						node2 = rechercheEq(cur2, xmlGetProp(cur, (const xmlChar *)"equipment-id"));
 						if (node2 != NULL)
 						{
-							if (myStrcmp(xmlGetProp(node2, "status"),
-								xmlGetProp(cur, "status")) != 0)
+							if (myStrcmp(xmlGetProp(node2, (const xmlChar *)"status"),
+								xmlGetProp(cur, (const xmlChar *)"status")) != 0)
 							{
-								xmlSetProp(node2, "status", xmlGetProp(cur, "status"));
+								xmlSetProp(node2, (const xmlChar *)"status", xmlGetProp(cur, (const xmlChar *)"status"));
 								modif = 1;
 							}
 						}
 						else
 						{
-							newnode = xmlNewTextChild(cur2, NULL, "equipment", NULL);
-							xmlNewProp (newnode, "status", xmlGetProp(node2, "status"));
-							xmlNewProp (newnode, "equipment-id", xmlGetProp(node2, "equipment-id"));
+							newnode = xmlNewTextChild(cur2, NULL, (const xmlChar *)"equipment", NULL);
+							xmlNewProp (newnode, (const xmlChar *)"status", xmlGetProp(node2, (const xmlChar *)"status"));
+							xmlNewProp (newnode, (const xmlChar *)"equipment-id", xmlGetProp(node2, (const xmlChar *)"equipment-id"));
 							modif = 1;
 						}
 					}
@@ -216,16 +208,16 @@ void update(char *docName)
 					{
 						if((!xmlStrcmp(node->name, (const xmlChar *) "equipment")))
 						{
-							status = xmlGetProp(node, "status"); //status de l'équipement à rechercher
-							equip = xmlGetProp(node, "equipment-id"); //equipement à rechercher
+							status = xmlGetProp(node, (const xmlChar *)"status"); //status de l'équipement à rechercher
+							equip = xmlGetProp(node, (const xmlChar *)"equipment-id"); //equipement à rechercher
 							
 							node2 = rechercheEq(cur2, equip); //on effectue une recherche dans le fichier résultat
 							if (node2 != NULL)
 							{
-								if (myStrcmp(xmlGetProp(node2, "status"),
+								if (myStrcmp(xmlGetProp(node2, (const xmlChar *)"status"),
 									status) != 0)
 								{
-									xmlSetProp(node2, "status", status);
+									xmlSetProp(node2, (const xmlChar *)"status", status);
 									modif = 1;
 								}
 								subnode = node->xmlChildrenNode; //-->indicator dans le fichier intermédiaire
@@ -233,24 +225,24 @@ void update(char *docName)
 								{
 									if((!xmlStrcmp(subnode->name, (const xmlChar *) "indicator")))
 									{
-										indicatorName = xmlGetProp(subnode, "name");
-										indicatorValue = xmlGetProp(subnode, "value");
+										indicatorName = xmlGetProp(subnode, (const xmlChar *)"name");
+										indicatorValue = xmlGetProp(subnode, (const xmlChar *)"value");
 										subnode2 = node2->xmlChildrenNode;
 										
 										subnode2 = rechercheInd(node2, indicatorName);
 										if(subnode2 != NULL)
 										{
-											if(myStrcmp(indicatorValue, xmlGetProp(subnode2, "value")) != 0)
+											if(myStrcmp(indicatorValue, xmlGetProp(subnode2, (const xmlChar *)"value")) != 0)
 											{
-												xmlSetProp(subnode2, "value", indicatorValue);
+												xmlSetProp(subnode2, (const xmlChar *)"value", indicatorValue);
 												modif = 1;
 											}
 										}
 										else
 										{
-											indnode = xmlNewTextChild(node2, NULL, "indicator", NULL);
-											xmlNewProp (indnode, "name", xmlGetProp(subnode, "name"));
-											xmlNewProp (indnode, "value", xmlGetProp(subnode, "value"));
+											indnode = xmlNewTextChild(node2, NULL, (const xmlChar *)"indicator", NULL);
+											xmlNewProp (indnode, (const xmlChar *)"name", xmlGetProp(subnode, (const xmlChar *)"name"));
+											xmlNewProp (indnode, (const xmlChar *)"value", xmlGetProp(subnode, (const xmlChar *)"value"));
 											modif = 1;
 										}
 										
@@ -260,18 +252,18 @@ void update(char *docName)
 							}
 							else
 							{
-								newnode = xmlNewTextChild(cur2, NULL, "equipment", NULL);
-								xmlNewProp (newnode, "status", xmlGetProp(node, "status"));
-								xmlNewProp (newnode, "equipment-id", xmlGetProp(node, "equipment-id"));
+								newnode = xmlNewTextChild(cur2, NULL, (const xmlChar *)"equipment", NULL);
+								xmlNewProp (newnode, (const xmlChar *)"status", xmlGetProp(node, (const xmlChar *)"status"));
+								xmlNewProp (newnode, (const xmlChar *)"equipment-id", xmlGetProp(node, (const xmlChar *)"equipment-id"));
 								
 								subnode = node->xmlChildrenNode;
 								while(subnode != NULL)
 								{
 									if((!xmlStrcmp(subnode->name, (const xmlChar *) "indicator")))
 									{
-										indnode = xmlNewTextChild(newnode, NULL, "indicator", NULL);
-										xmlNewProp (indnode, "name", xmlGetProp(subnode, "name"));
-										xmlNewProp (indnode, "value", xmlGetProp(subnode, "value"));
+										indnode = xmlNewTextChild(newnode, NULL, (const xmlChar *)"indicator", NULL);
+										xmlNewProp (indnode, (const xmlChar *)"name", xmlGetProp(subnode, (const xmlChar *)"name"));
+										xmlNewProp (indnode, (const xmlChar *)"value", xmlGetProp(subnode, (const xmlChar *)"value"));
 									}
 									subnode = subnode->next;
 								}
@@ -289,21 +281,21 @@ void update(char *docName)
 	}
 	if (doc2 != NULL && modif == 1)
 	{
-		xmlSaveFormatFile("final.xml", doc2, 1);
+		xmlSaveFormatFile("xmlFiles/final.xml", doc2, 1);
 	}
 	
 	xmlFreeDoc(doc);
 	xmlFreeDoc(doc2);
 }
 
-xmlNodePtr rechercheEq(xmlNodePtr node, char * equipmentId)
+xmlNodePtr rechercheEq(xmlNodePtr node, xmlChar * equipmentId)
 {
 	xmlNodePtr tmp = node->xmlChildrenNode;
 	while(tmp != NULL)
 	{
 		if((!xmlStrcmp(tmp->name, (const xmlChar *) "equipment")))
 		{
-			if(myStrcmp(equipmentId , xmlGetProp(tmp, "equipment-id")) == 0)
+			if(myStrcmp(equipmentId , xmlGetProp(tmp, (const xmlChar *)"equipment-id")) == 0)
 			{
 				return tmp;
 			}
@@ -313,14 +305,14 @@ xmlNodePtr rechercheEq(xmlNodePtr node, char * equipmentId)
 	return NULL;
 }
 
-xmlNodePtr rechercheInd(xmlNodePtr node, char * equipmentId)
+xmlNodePtr rechercheInd(xmlNodePtr node, xmlChar * equipmentId)
 {
 	xmlNodePtr tmp = node->xmlChildrenNode;
 	while(tmp != NULL)
 	{
 		if((!xmlStrcmp(tmp->name, (const xmlChar *) "indicator")))
 		{
-			if(myStrcmp(equipmentId , xmlGetProp(tmp, "name")) == 0)
+			if(myStrcmp(equipmentId , xmlGetProp(tmp, (const xmlChar *)"name")) == 0)
 			{
 				return tmp;
 			}
@@ -330,46 +322,62 @@ xmlNodePtr rechercheInd(xmlNodePtr node, char * equipmentId)
 	return NULL;
 }
 
-int myStrcmp(char * ch1, char * ch2)
+int myStrcmp(xmlChar * ch1, xmlChar * ch2)
 {
 	int i;
-	for (i=0; i<strlen(ch1); i++)
+	for (i=0; i<xmlStrlen(ch1); i++)
 		ch1[i]=tolower(ch1[i]);
 		
-	for (i=0; i<strlen(ch2); i++)
+	for (i=0; i<xmlStrlen(ch2); i++)
 		ch2[i]=tolower(ch2[i]);
 		
-	return strcmp(ch1, ch2);
+	return xmlStrcmp(ch1, ch2);
 	
 }
 
+void updateFiles()
+{
+	for(int i = 0; i< filesTab.size(); i++)
+	{
+		if(filesTab[i].indicator == 1)
+		{
+			cout<<"modified: "<<filesTab[i].name<<endl;
+			update(filesTab[i].name);
+			filesTab[i].indicator = 0;
+		}
+		else
+			if(filesTab[i].indicator == 2)
+			{
+				cout<<"new: "<<filesTab[i].name<<endl;
+				update(filesTab[i].name);
+				filesTab[i].indicator = 0;
+			}
+	}
+	
+}
 
 int main (void)
 {
-	int init_nbf = 0;
+	int init_nbf = countFiles();;
 	
 	DIR * rep = NULL;
 	rep = opendir("xmlFiles");
 	init_filesTab();
 	while (1)
-	{
-		int curr_nbf = countFiles();
-		if(init_nbf < curr_nbf)
+	{	
+		check_xmlfiles();		
+		int curr_nbf = countFiles();	
+		cout<<"nb de fichiers: "<<curr_nbf<<endl;
+		if(init_nbf > curr_nbf)
 		{
 			init_nbf = curr_nbf;
-			cout<<"y a de nouveaux fichiers :)"<<endl;
+			cout<<"y a des fichiers en moins :'("<<endl;
+			init_filesTab();
 		}
 		else
-			if(init_nbf > curr_nbf)
-			{
-				init_nbf = curr_nbf;
-				cout<<"y a des fichiers en moins :'("<<endl;
-				init_filesTab();
-			}
-		if(check_xmlfiles() != 0)
-			cout<<"Un fichier a été modifié :D"<<endl;
-		
-		cout<<"nb de fichiers:"<<init_nbf<<endl;
+		{
+			updateFiles();
+		}
 		sleep(10);
 
 	}
