@@ -130,11 +130,10 @@ void update(char *docName)
 {
 	xmlDocPtr doc, doc2;
 	xmlNodePtr cur, cur2, node, node2, subnode, subnode2, newnode, indnode;
-	char *ptr = NULL;
 	doc = xmlParseFile(docName);
 	doc2 = xmlParseFile("xmlFiles/final.xml");
 	xmlChar * status, * equip, * indicatorValue, * indicatorName;
-	int modif = 0, eqTrouve = 0, indTrouve = 0;
+	int modif = 0;
 	
 	if (doc == NULL) {
 		fprintf(stderr, "Le documents %s n'a pas pu être ouvert \n", docName);
@@ -158,7 +157,7 @@ void update(char *docName)
 		}
 
 	if (xmlStrcmp(cur->name, (const xmlChar*) "event")) {
-		fprintf(stderr, "le document a un type invalide, root node != %S \n",
+		fprintf(stderr, "le document a un type invalide, root node != %s \n",
 				cur->name);
 		xmlFreeDoc(doc);
 		return;
@@ -337,7 +336,7 @@ int myStrcmp(xmlChar * ch1, xmlChar * ch2)
 
 void updateFiles()
 {
-	for(int i = 0; i< filesTab.size(); i++)
+	for(unsigned int i = 0; i< filesTab.size(); i++)
 	{
 		if(filesTab[i].indicator == 1)
 		{
@@ -358,10 +357,8 @@ void updateFiles()
 
 int main (void)
 {
-	int init_nbf = countFiles();;
+	int init_nbf = countFiles();
 	
-	DIR * rep = NULL;
-	rep = opendir("xmlFiles");
 	init_filesTab();
 	while (1)
 	{	
