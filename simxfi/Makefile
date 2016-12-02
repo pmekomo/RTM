@@ -1,4 +1,4 @@
-CC=g++
+CC=arm-unknown-linux-gnueabi-g++
 CFLAGS=-W -Wall -ansi -pedantic -O0 -g
 THREADS=-lpthread
 LIBXML=-I/usr/include/libxml2

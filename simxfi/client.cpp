@@ -13,6 +13,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <signal.h>
+#define CHECK_FILE_TIME 60
 
 using namespace std;
 
@@ -228,7 +229,7 @@ void *checkfile_handler(void* arg)
 			}
 		}
 
-		sleep(120);
+		sleep(CHECK_FILE_TIME);
 	}
 
 	perror("stat");

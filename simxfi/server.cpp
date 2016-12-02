@@ -12,6 +12,7 @@
 #include "equipement.h"
 #include "files.h"
 #include "utile.h"
+#define SERVER_FILE "xmlFiles/final.xml"
 
 using namespace std;
 
@@ -132,7 +133,8 @@ void *connection_handler(void *socket_desc)
 	char client_message[2000], fileName[1024];
 	
 	//File Name
-	strcpy(fileName, "file");
+	strcpy(fileName, "xmlFiles/");
+	strcat(fileName, "file");
 	rename_file(fileName, sock);
 
 	n = read(sock, client_message, 2000);
@@ -154,8 +156,8 @@ void *connection_handler(void *socket_desc)
 		}
 		if (mystrcmp(client_message, "ecbstate") == 0)
 		{
-			cout<<"Sending of file ecb.xml"<<endl;
-			if (send_file(sock, "xmlFiles/ecb.xml") > 0)
+			cout<<"Sending of server file"<<endl;
+			if (send_file(sock, SERVER_FILE) > 0)
 				cout<<"sending succeeded------"<<endl;
 			else
 				cout<<"sending failed------"<<endl;
