@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<event topic="sys" datetime="2013-09-30T19:20:27.785+02:00">
+    <state status="running" equipment-id="RTM_ 9991">
+      <indicator name="poweroff" value="false"/>
+      <indicator name="badge-id" value="10234"/>
+      <equipment status="running" equipment-id="ECB"/>
+      <equipment status="running" equipment-id="WIFI"/>
+      <equipment status="running" equipment-id="TACTILEO"/>
+      <equipment status="starting" equipment-id="SAE"/>
+      <equipment status="running" equipment-id="GPS"><indicator name="error" value="false"/><indicator name="lat" value=""/><indicator name="long" value=""/></equipment>
+      <equipment status="stopping" equipment-id="Radio"/>
+      <equipment status="running" equipment-id="VPE1">
+        <indicator name="connection" value="true"/>
+        <indicator name="id" value="1"/>
+        <indicator name="contactless" value="true"/>
+        <indicator name="blocked" value="false"/>
+        <indicator name="operational" value="true"/>
+        <indicator name="timestamp" value="2013-09-30T19:20:23"/>
+        <indicator name="error" value="-"/>
+        <indicator name="version" value="-"/>
+      </equipment>
+      <equipment status="stopping" equipment-id="VPE 2">
+        <indicator name="connection" value="false"/>
+        <indicator name="id" value="2"/>
+        <indicator name="contactless" value="true"/>
+        <indicator name="blocked" value="false"/>
+        <indicator name="operational" value="false"/>
+        <indicator name="timestamp" value="2013-09-30T16:19:41"/>
+        <indicator name="error" value="CAS02"/>
+        <indicator name="version" value="00.00.00.00.00.00"/>
+      </equipment>
+      <equipment status="starting" equipment-id="URE"/>
+      <equipment status="starting" equipment-id="VIDEO"/>
+      <equipment status="stopping" equipment-id="HTC">
+        <indicator name="topics" value="*"/>
+      </equipment>
+    <equipment status="stopping" equipment-id="eric"><indicator name="error" value="false"/></equipment><equipment status="running" equipment-id="LED"><indicator name="error" value="true"/></equipment><equipment status="running" equipment-id="tft 1"><indicator name="error" value="false"/></equipment><equipment status="running" equipment-id="TFT 2"><indicator name="error" value="false"/></equipment><equipment status="stopping" equipment-id="TFT 3"><indicator name="error" value="true"/></equipment></state>
+  </event>

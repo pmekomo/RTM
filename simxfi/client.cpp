@@ -13,6 +13,9 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <errno.h>
+#include <vector>
+#include "service.h"
 #define CHECK_FILE_TIME 60
 
 using namespace std;
@@ -27,20 +30,59 @@ int server_sock;
 char fileName[1024];
 
 
-pthread_t msg_thread;
 pthread_t listen_thread;
-pthread_t checkfile_thread;
+vector <Service> services;
+void detect_services()
+{
+	FILE *fd = fopen("tmp.txt", "r");
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	if (fd == NULL)
+		exit(EXIT_FAILURE);
+	
+        char ch[1024][1024];
+	while((read = getline(&line, &len, fd)) != -1)
+	{
+		int i = 0, j = 0, k = 0;
+		while(i <strlen(line))
+		{
+			if (line[i] != ';')
+			{
+				if (line[i] != '\n')
+					if (j == 0)
+						ch[j][k++] = line[i];
+			}
+			else
+			{
+				j++;
+				k = 0;
+			}
+			i++;
+		}
 
-void *message_handler(void *socket_desc);
+		for (int i = 0; i<services.size(); i++)
+		{
+			if ((services[i].getServiceName().compare(ch[1]) != 0) and 
+				(services[i].getHostname().compare(ch[0]) != 0) and
+				(services[i].getPort().compare(ch[2]) != 0))
+			{
+				Service serv(ch[1], ch[0], ch[2]);
+				services.push_back(serv);
+			}
+		}
+	}
+	fclose(fd);
+}
 void *listen_handler(void *socket_desc);
-void *checkfile_handler(void *arg);
 int main(int argc, char *argv[])
 {
 
 //--------------INITIALISATION DU SOCKET ET CONNECTION------------------
-	int sockfd, portno, *tmp_sock;
+	int sockfd, portno, tmp_sock;
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
+	
 
 	if (argc < 3) {
 		fprintf(stderr,"usage %s hostname port [connection_type]\n", argv[0]);
@@ -48,7 +90,7 @@ int main(int argc, char *argv[])
 	}
 	portno = atoi(argv[2]);
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) 
+	if (sockfd < 0)
 		error("ERROR opening socket");
 	server = gethostbyname(argv[1]);
 	if (server == NULL) {
@@ -65,123 +107,28 @@ int main(int argc, char *argv[])
 		error("ERROR connecting");
 //**********************************************************************
 	
-	tmp_sock = (int*)malloc(2*sizeof(int));
-	tmp_sock[0] = sockfd;
-	if (argc == 4)
-	{
-		if (strcmp(argv[3], "nocast") == 0)
-			tmp_sock[1] = 1;
-	}
-	else
-		tmp_sock[1] = 0;
-
-	if (pthread_create(&msg_thread, NULL, message_handler, (void*)tmp_sock)<0)
-	{
-		perror("could not create messages thread");
-	}
+	server_sock = sockfd;
     
-	if(pthread_create(&listen_thread, NULL, listen_handler, (void*)tmp_sock)<0)
+	if(pthread_create(&listen_thread, NULL, listen_handler, NULL)<0)
 	{
 		perror("could not create listening thread");
 	}
-
-	if (pthread_create(&checkfile_thread, NULL, checkfile_handler, NULL)<0)
-		perror("could not create checkfile thread");
         
-	pthread_join(msg_thread, NULL);
 	pthread_join(listen_thread, NULL);
-	pthread_join(checkfile_thread, NULL);
     
 	return 0;
 }
 
-void *message_handler(void *socket_desc)
-{
-	
-	//Get the socket descriptor
-	int *sock = (int*)socket_desc;
-	char buffer[256];
-	int n;
-
-	//Envoi du type de connection au serveur
-	if (sock[1] == 1)
-		strcpy(buffer, "nocast");
-	else
-		strcpy(buffer, "normal");
-	n = write(sock[0],buffer,strlen(buffer));
-	bzero(buffer, strlen(buffer));
-
-	//Envoi de messages au serveur
-	while(n>=0)
-	{
-		cin>>buffer;
-		n = write(sock[0],buffer,strlen(buffer));
-		bzero(buffer, strlen(buffer));
-	}
-	
-	if (n < 0) error("ERROR reading from socket");
-	close(sock[0]);
-	pthread_exit(NULL);
-}
-
-
-void socket_send(int sig)
-{
-	cout<<"--------states file modified-------"<<endl;
-	if (send(server_sock,"eqstate",7, 0) >= 0)
-	{
-		if (send_file (server_sock, fileName))
-			cout<<"send succeeded-------"<<endl;
-		else
-			cout<<"send failed--------"<<endl;
-	}
-	else
-		cout<<"Server unreachabled"<<endl;
-
-}
-
 void *listen_handler(void *socket_desc)
 {
-	//Get the socket descriptor
-	server_sock = *(int*)socket_desc;
 	int r;
-
+	(void) socket_desc;
 	char server_message[2000], *sending_buffer = new char[2048];
 
-	/*struct sigaction sa;
 
-	sa.sa_handler = socket_send;
-	sigemptyset(&sa.sa_mask); 
-	sa.sa_flags=0;
-	sigaction(SIGURG, &sa, 0);*/
-
-	if ((signal(SIGURG, socket_send)) == SIG_ERR)
-	{
-		perror("signal");
-		exit(EXIT_FAILURE);
-	}
-
-	//File name
-	strcpy(fileName, "xmlFiles/file.xml");
-
-	//Sending Message
-	strcpy (sending_buffer, "ok");
-
-	while((r=read(server_sock,server_message,2000))>0)
+	while((r=read(server_sock,server_message,8))>0)
 	{
 		cout<<server_message<<endl;
-		if (strcmp (server_message, "eqstate") == 0)
-		{
-			if (send(server_sock,server_message,strlen(server_message), 0) >= 0)
-			{
-				if (send_file (server_sock, fileName))
-					cout<<"send succeeded-------"<<endl;
-				else
-					cout<<"send failed--------"<<endl;
-			}
-			else
-				cout<<"Server unreachabled"<<endl;
-		}
 		if (strcmp (server_message, "ecbstate") == 0)
 		{
 			if (send(server_sock,server_message,strlen(server_message), 0) >= 0)
@@ -204,34 +151,5 @@ void *listen_handler(void *socket_desc)
 
 	close(server_sock);
 
-	pthread_exit(NULL);
-}
-
-void *checkfile_handler(void* arg)
-{
-	struct stat sb;
-	char *init_time = new char[1024];
-
-	strcpy (init_time, "");
-	//to remove warning
-	(void) arg;
-	
-	while(stat("xmlFiles/file.xml", &sb) != -1) 
-	{
-		if (strlen(init_time) == 0)
-			strcpy(init_time, ctime(&sb.st_mtime));
-		else
-		{
-			if (strcmp(init_time, ctime(&sb.st_mtime)) != 0)
-			{
-				strcpy(init_time, ctime(&sb.st_mtime));
-				pthread_kill(listen_thread, SIGURG);
-			}
-		}
-
-		sleep(CHECK_FILE_TIME);
-	}
-
-	perror("stat");
 	pthread_exit(NULL);
 }
