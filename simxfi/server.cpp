@@ -177,7 +177,7 @@ void *checkfile_handler(void*)
 
 	strcpy(init_time, "");
 
-	while(stat(SERVER_FILE, &sb) != -1)
+while(stat(SERVER_FILE, &sb) != -1)
 	{
 		if(strlen(init_time) == 0)
 			strcpy(init_time, ctime(&sb.st_mtime));
