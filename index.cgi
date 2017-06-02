@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import lxml.etree as ET
 
 print "Content-Type: text/html"     # HTML is following
@@ -11,7 +11,7 @@ print "<p><img src='data:image/png;base64,%s' /><p>"%(''.join(open('logortm.png'
 print "<br/>"
 
 print "<h1>ETATS DES EQUIPEMENTS DU BUS</h1>"
-dom = ET.parse("ecb.xml")
+dom = ET.parse("simxfi/xmlFiles/final.xml")
 xslt = ET.parse("path.xsl")
 transform = ET.XSLT(xslt)
 newdom = transform(dom)

@@ -57,9 +57,9 @@ int send_file(int socket, char *fileName){
 int receive_file(int socket, char *fileName)
 { 
 
-	int buffersize = 0, recv_size = 0,size = 0, read_size, write_size, packet_index =1,stat;
+	int recv_size = 0,size = 0, read_size, write_size, stat;
 
-	char imagearray[10241],verify = '1';
+	char imagearray[10241];
 	FILE *file;
 
 	//Find the size of the file
@@ -87,12 +87,10 @@ int receive_file(int socket, char *fileName)
 
 	//Loop while we have not received the entire file yet
 
-
-	int need_exit = 0;
 	struct timeval timeout = {10,0};
 
 	fd_set fds;
-	int buffer_fd, buffer_out;
+	int buffer_fd;
 
 	while(recv_size < size) {
 

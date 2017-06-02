@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<event topic="sys" datetime="2013-09-30T19:20:27.785+02:00">
+	<state status="running" equipment-id="BUS_9991">
+		<indicator name="poweroff" value="false"/>
+		<equipment status="stopping" equipment-id="ECB"/>
+		<equipment status="starting" equipment-id="WIFI"/>
+		<equipment status="starting" equipment-id="PCB3"/>
+		<equipment status="starting" equipment-id="VCP"/>
+		<equipment status="running" equipment-id="GPS"/>
+		<equipment status="starting" equipment-id="Radio"/>
+		<equipment status="running" equipment-id="VM">
+			<indicator name="connection" value="true"/>
+			<indicator name="id" value="1"/>
+			<indicator name="contactless" value="true"/>
+			<indicator name="blocked" value="false"/>
+			<indicator name="operational" value="true"/>
+			<indicator name="timestamp" value="2013-09-30T19:20:23"/>
+			<indicator name="error" value="-"/>
+			<indicator name="version" value="-"/>
+		</equipment>
+		<equipment status="starting" equipment-id="VPE 1">
+			<indicator name="connection" value="true"/>
+			<indicator name="timestamp" value="2016-09-30T17:08:52"/>
+			<indicator name="blocked" value="false"/>
+			<indicator name="localized" value="false"/>
+		</equipment>
+		<equipment status="stopping" equipment-id="VPE 2">
+			<indicator name="connection" value="false"/>
+			<indicator name="id" value="2"/>
+			<indicator name="contactless" value="true"/>
+			<indicator name="blocked" value="false"/>
+			<indicator name="operational" value="false"/>
+			<indicator name="timestamp" value="2013-09-30T16:19:41"/>
+			<indicator name="error" value="CAS02"/>
+			<indicator name="version" value="00.00.00.00.00.00"/>
+		</equipment>
+		<equipment status="stopping" equipment-id="URE"/>
+		<equipment status="starting" equipment-id="VIDEO"/>
+		<equipment status="stopping" equipment-id="HTC">
+			<indicator name="topics" value="*"/>
+		</equipment>
+	</state>
+</event>

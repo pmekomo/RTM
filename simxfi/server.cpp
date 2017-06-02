@@ -10,8 +10,11 @@
 #include <pthread.h>
 #include <vector>
 #include "equipement.h"
+#include <sys/stat.h>
 #include "files.h"
 #include "utile.h"
+#define CHECK_FILE_TIME 10
+#define SERVER_FILE "xmlFiles/final.xml"
 
 using namespace std;
 
@@ -41,7 +44,7 @@ void erase_client(int elem)
 }
 void *listen_handler(void *socket_desc);
 void *connection_handler(void *socket_desc);
-void *message_handler(void *param);
+void *checkfile_handler(void *param);
 int main(int argc, char *argv[])
 {
 
@@ -75,15 +78,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
-	pthread_t msg_thread;
-	if (pthread_create (&msg_thread, NULL, message_handler, NULL) <0)
+	pthread_t checkfile_thread;
+	if (pthread_create (&checkfile_thread, NULL, checkfile_handler, NULL) <0)
 	{
 		perror("could not create messages thread");
 		return 2;
 	}
 	
 	pthread_join(client_thread, NULL);
-	pthread_join(msg_thread, NULL);
+	pthread_join(checkfile_thread, NULL);
 		
 	return 0; 
 }
@@ -122,40 +125,23 @@ void *listen_handler(void *socket_desc)
 		error("ERROR on accept");
 }
 
-//pour ecouter les messages des clients
+//pour envoyer un message à un client
 void *connection_handler(void *socket_desc)
 {
 	//Get the socket descriptor
 	int sock = *(int*)socket_desc;
 	int n;
-
 	char client_message[2000], fileName[1024];
-	
-	//File Name
-	strcpy(fileName, "file");
-	rename_file(fileName, sock);
 
-	n = read(sock, client_message, 2000);
-	cout<<"Client connected in "<<client_message<<" mode"<<endl;
-	if (strcmp(client_message, "nocast")== 0)
-		erase_client(sock);
 	bzero(client_message, strlen(client_message));
 
 	while((n = read(sock,client_message,2000)) > 0)
 	{
 		cout<<client_message<<endl;
-		if (mystrcmp(client_message, "eqstate") == 0)
-		{
-			cout<<"Establishing of file "<<fileName<<endl;
-			if (receive_file(sock, fileName) > 0)
-				cout<<"reception succeeded------"<<endl;
-			else
-				cout<<"reception failed------"<<endl;
-		}
 		if (mystrcmp(client_message, "ecbstate") == 0)
 		{
-			cout<<"Sending of file ecb.xml"<<endl;
-			if (send_file(sock, "xmlFiles/ecb.xml") > 0)
+			cout<<"Sending of server file"<<endl;
+			if (send_file(sock, SERVER_FILE) > 0)
 				cout<<"sending succeeded------"<<endl;
 			else
 				cout<<"sending failed------"<<endl;
@@ -175,18 +161,38 @@ void *connection_handler(void *socket_desc)
     return 0;
 }
 
-//pour envoyer des messages aux clients
-void *message_handler(void*)
+void broadcast_data(void)
 {
-	char buffer[255];
-	do
+	for (unsigned int i = 0; i<clients_tab.size(); i++)
 	{
-		cin>>buffer;
-		for (unsigned int i = 0; i<clients_tab.size(); i++)
+		write(clients_tab[i].getNumSock(), "ecbstate", 8);
+	}
+}
+
+
+void *checkfile_handler(void*)
+{
+	struct stat sb;
+	char *init_time = new char[1024];
+
+	strcpy(init_time, "");
+
+	while(stat(SERVER_FILE, &sb) != -1)
+	{
+		if(strlen(init_time) == 0)
+			strcpy(init_time, ctime(&sb.st_mtime));
+		else
 		{
-			if (send(clients_tab[i].getNumSock(),buffer,strlen(buffer), 0)<0)
-				perror("error of broadcasting message");
+			if(strcmp(init_time, ctime(&sb.st_mtime)) != 0)
+			{
+				strcpy(init_time, ctime(&sb.st_mtime));
+				broadcast_data();
+			}
 		}
-	}while(1);
-	
+
+		sleep(CHECK_FILE_TIME);
+	}
+
+	perror("stat");
+	pthread_exit(NULL);
 }
