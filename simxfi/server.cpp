@@ -1,3 +1,9 @@
+/******************************************************************************************************************************
+Dans ma logique de programmation chaque service est en fait une exécution du binaire server.
+Dans ce script on ouvre un port socket sur lequel devront se connecter tous les autres équipements du réseau.
+A tous les équipements connectés au socket les informations leurs sont transmises(à partir d'un fichier *.xml assocé au service)
+
+*******************************************************************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,15 +28,6 @@ void error(const char *msg)
 {
     perror(msg);
     exit(1);
-}
-
-void rename_file(char *fileName, int num)
-{
-	char number[256];
-	sprintf(number, "%d", num);
-	strcat (fileName, "-");
-	strcat (fileName, number);
-	strcat(fileName, ".xml");
 }	
 
 vector <Equipement> clients_tab;
