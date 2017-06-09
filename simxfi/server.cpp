@@ -69,12 +69,14 @@ int main(int argc, char *argv[])
 	
 	tmp_sock = (int *)malloc(sizeof(int));
 	*tmp_sock = sockfd;
+	//On crée le thread qui va gérer la connexion des clients
 	if (pthread_create (&client_thread, NULL, listen_handler, (void*) tmp_sock) < 0)
 	{
 		perror("could not create clients thread");
 		return 1;
 	}
 	
+	//On crée un thread qui va vérifié l'état du fichiers contenant les informations du service
 	pthread_t checkfile_thread;
 	if (pthread_create (&checkfile_thread, NULL, checkfile_handler, NULL) <0)
 	{
@@ -166,7 +168,7 @@ void broadcast_data(void)
 	}
 }
 
-
+//Handler pour vérifier l'état du fichier du service
 void *checkfile_handler(void*)
 {
 	struct stat sb;
