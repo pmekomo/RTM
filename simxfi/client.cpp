@@ -1,3 +1,10 @@
+/************************************************************************************
+Il s'agit du programme qui va permettre aux équipements d'accéder aux services des autres équipements.
+L'équipement établit plusieurs connexion afin d'accéder aux différents services proposés par chaque équipement.
+La connexion consiste en l'ouverture d'un socket qui permettra à l'équipement de recevoir les informations
+des différents services du réseau.
+******************************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,6 +42,7 @@ vector <Service> services;
 void *listen_handler(void *param);
 void *serv_handler(void *param);
 
+//Fonction permettant de rechercher un service en fonction dans le vecteur contenant l'ensemble des services
 bool find_service(char *serviceName, char *hostname, char *port)
 {
 	bool found = false;
@@ -51,6 +59,9 @@ bool find_service(char *serviceName, char *hostname, char *port)
 	}
 	return found;
 }
+
+//Fonction permettant le remplissage du vecteur de services en fonction des services disponibles sur le réseau
+//Ces services sont dispo dans le fichier SERVICES_FILE obtenu au préalable par l'exécution du script avahi.py
 void detect_services()
 {
 	FILE *fd = fopen(SERVICES_FILE, "r");
@@ -77,7 +88,7 @@ void detect_services()
 			}
 			i++;
 		}
-
+		//A chaque service on associe un thread bien-sûr on vérifie si le service n'est pas déjà pris en compte
 		if (!find_service(ch[1], ch[0], ch[2]))
 		{
 			Service serv(ch[1], ch[0], ch[2]);
@@ -102,8 +113,10 @@ int main(int argc, char *argv[])
 	char *init_time = new char[1024];
 
 	strcpy(init_time, "");
-
 	detect_services();
+	
+	//La boucle permet de vérifier tous les CHECK_FILE_TIME si le fichier contenant les services a été modifié
+	//Si c'est le cas on relance la fonction detect_services()
 	while(stat(SERVICES_FILE, &sb) != -1)
 	{
 		if(strlen(init_time) == 0)
@@ -123,6 +136,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+//Ce handler permet l'ouverture d'un socket sur le service associé au thread
 void *serv_handler(void *param)
 {
 	int *i = (int *)param;
