@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Service::Service(string serviceName, string hostname, string port, bool connected)
+Service::Service(string serviceName, string hostname, string port)
 {
 	this->serviceName = serviceName;
 	this->hostname = hostname;

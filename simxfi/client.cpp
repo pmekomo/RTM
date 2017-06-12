@@ -46,7 +46,7 @@ void *serv_handler(void *param);
 bool find_service(char *serviceName, char *hostname, char *port)
 {
 	bool found = false;
-	int i = 0;
+	unsigned int i = 0;
 	while((i<services.size()) and !found)
 	{
 		if ((services[i].getServiceName().compare(serviceName) == 0) and
@@ -74,7 +74,7 @@ void detect_services()
         char ch[3][1024];
 	while((read = getline(&line, &len, fd)) != -1)
 	{
-		int i = 0, j = 0, k = 0;
+		unsigned int i = 0, j = 0, k = 0;
 		while(i <strlen(line))
 		{
 			if ((line[i] != ';') and (line[i] != '\n'))
@@ -107,7 +107,7 @@ void detect_services()
 	fclose(fd);
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	struct stat sb;
 	char *init_time = new char[1024];
@@ -160,6 +160,9 @@ void *serv_handler(void *param)
 	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_port = htons(portno);
 	int ttl = 0;
+
+	//On fait 3 tentatives de connexion de 60 secondes
+	//Si au bout des tentatives on arrive pas à se connecter le thread est stoppé
 	while ((connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) and (ttl<3))
 	{
 		cout<<"ERROR connecting to service: "<<service<<" host: "<<hostname<<" port: " <<portno<<endl;
@@ -169,30 +172,18 @@ void *serv_handler(void *param)
 	if(ttl == 3)
 		pthread_exit(0);
 	
+	//On remplit le champ socket du service
 	services[*i].socket = sockfd;
 
-	if(pthread_create(&listen_thread, NULL, listen_handler, i)<0)
-	{
-		perror("could not create listening thread");
-	}
-
-	pthread_join(listen_thread, NULL);
-
-}
-
-void *listen_handler(void *param)
-{
-	int r;
-	int *i = (int *)param;
-	char server_message[2000], *sending_buffer = new char[2048];
+	char server_message[2000];
 	int server_sock = services[*i].socket;
-
-	while((r=read(server_sock,server_message,8))>0)
+	int r;
+	while((r=read(sockfd,server_message,8))>0)
 	{
 		cout<<server_message<<endl;
 		if (strcmp (server_message, "ecbstate") == 0)
 		{
-			if (send(server_sock,server_message,strlen(server_message), 0) >= 0)
+			if (send(sockfd,server_message,strlen(server_message), 0) >= 0)
 			{
 				if (receive_file(server_sock, (char*)"xmlFiles/myecb.xml") > 0)
 					cout<<"reception succeeded-------"<<endl;
@@ -210,7 +201,7 @@ void *listen_handler(void *param)
 	else
 		perror("recv failed");
 
-	close(server_sock);
+	close(sockfd);
 
 	pthread_exit(NULL);
 }

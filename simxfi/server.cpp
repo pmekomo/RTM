@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 void *listen_handler(void *socket_desc)
 {
 	
-	struct sockaddr_in serv_addr, cli_addr;
+	struct sockaddr_in cli_addr;
 	int newsockfd, socklh = *(int*)socket_desc, *client_sock;
 	
 	socklen_t clilen = sizeof(cli_addr);
@@ -122,6 +122,8 @@ void *listen_handler(void *socket_desc)
 	}
 	if (newsockfd < 0)
 		error("ERROR on accept");
+	
+	return 0;
 }
 
 //pour envoyer un message à un client
@@ -130,7 +132,7 @@ void *connection_handler(void *socket_desc)
 	//Get the socket descriptor
 	int sock = *(int*)socket_desc;
 	int n;
-	char client_message[2000], fileName[1024];
+	char client_message[2000];
 
 	bzero(client_message, strlen(client_message));
 

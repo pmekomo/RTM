@@ -1,3 +1,13 @@
+/***************************************************************************************************************************************************
+Programme permettant de gérer la fusion de fichiers XML dans un répertoire
+On gère l'ensemble des fichiers du répertoire dans un vector dont un fichier principal constituant un agregat des différents autres
+Une fonction permet de vérifier s'il y a des modifications dans le répertoire(nouveau fichiers, modification de fichiers)
+En cas de modification dans le répertoire une mise à jour du fichier XML principal est effectuée
+
+Note-1:Ce programme est considéré comme un daemon il doit être lancé en parallèle des autres programmes sur chaque équipement
+Note-2:Ce programme n'est pas figé et peut être modifié pour être adapté à tous fichiers XML
+
+****************************************************************************************************************************************************/
 #include "xmlmanager.h"
 
 using namespace std;
@@ -12,6 +22,7 @@ typedef struct xmlFile
 //we manage a table of the current repository files
 vector<xmlFile> filesTab;
 
+//Fonction qui compte le nombre de fichiers dans le répertoire
 int countFiles(void)
 {
 	DIR * dir = NULL;
@@ -30,6 +41,7 @@ int countFiles(void)
 	return nbf;
 }
 
+//Fonction qui initialise le conteneur de fichiers avec les fichiers du répertoire
 int init_filesTab (void)
 {
 	DIR * dir = NULL;
@@ -68,7 +80,7 @@ int init_filesTab (void)
 	return 0;
 }
 
-
+//Fonction permettant de vérifier l'ensemble des fichiers du répertoire
 int check_xmlfiles (void)
 {
 	DIR * dir = NULL;
@@ -84,8 +96,11 @@ int check_xmlfiles (void)
 			strcpy(tmp, "xmlFiles/");
 			strcat(tmp, file->d_name);
 			int i = 0, trouve = 0;
+
+			//On recherche le fichier contenu dans tmp dans le conteneur de fichiers filesTab
 			while(i< nb_files && trouve == 0)
 			{
+				//Si on le retrouve on vérifie s'il a été modifié et on lui affecte un indicateur le précisant("1" pour modifié)
 				if (strcmp(filesTab[i].name, tmp) == 0)
 				{
 					trouve = 1;
@@ -104,6 +119,8 @@ int check_xmlfiles (void)
 				}
 				i++;
 			}
+			//si on a pas retrouvé le fichier dans le conteneur de fichier on l'y insère et on ajoute un indication précisant qu'il est nouveau
+			//("2" pour nouveau fichier)
 			if (trouve == 0)
 			{
 				xmlFile xmltmp;
@@ -126,12 +143,13 @@ int check_xmlfiles (void)
 	return 0;
 }
 
+//Fonction permettant de mettre à jour un fichier XML(Ajout de Noeud, ajout d'attributs, modification des valeurs des attributs...)
 void update(char *docName)
 {
 	xmlDocPtr doc, doc2;
 	xmlNodePtr cur, cur2, node, node2, subnode, subnode2, newnode, indnode;
 	doc = xmlParseFile(docName);
-	doc2 = xmlParseFile("xmlFiles/final.xml");
+	doc2 = xmlParseFile("xmlFiles/final.xml");//Document à mettre à jour
 	xmlChar * status, * equip, * indicatorValue, * indicatorName;
 	int modif = 0;
 	
@@ -155,7 +173,7 @@ void update(char *docName)
 			fprintf(stderr, "Le document final.xml est vide\n");
 			return;
 		}
-
+	//On vérifie le nom du noeud principal
 	if (xmlStrcmp(cur->name, (const xmlChar*) "event")) {
 		fprintf(stderr, "le document a un type invalide, root node != %s \n",
 				cur->name);
@@ -173,6 +191,7 @@ void update(char *docName)
 	cur = cur->xmlChildrenNode; //-->state du fichier intermédiaire
 	cur2 = cur2->xmlChildrenNode;//-->state du fichier résultat
 	/*if (baliseFille != NULL) {*/
+	//On parcourt tous les noeuds du fichiers intermédiaire pour faire les comparaisons avec tout ceux du fichier résultat
 	while (cur != NULL) {
 		if ((!xmlStrcmp(cur->name, (const xmlChar *) "state"))) 
 		{
@@ -334,10 +353,12 @@ int myStrcmp(xmlChar * ch1, xmlChar * ch2)
 	
 }
 
+
 void updateFiles()
 {
 	for(unsigned int i = 0; i< filesTab.size(); i++)
 	{
+		//S'il s'agit d'un fichier modifié
 		if(filesTab[i].indicator == 1)
 		{
 			cout<<"modified: "<<filesTab[i].name<<endl;
@@ -345,6 +366,7 @@ void updateFiles()
 			filesTab[i].indicator = 0;
 		}
 		else
+			//S'il s'agit d'un nouveau fichier
 			if(filesTab[i].indicator == 2)
 			{
 				cout<<"new: "<<filesTab[i].name<<endl;

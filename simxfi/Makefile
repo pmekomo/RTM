@@ -1,3 +1,4 @@
+#Compilation si la cible n'est pas de l'architecture ARM remplacer "arm-unknown-linux-gnueabi-g++" par "g++"
 CC=arm-unknown-linux-gnueabi-g++
 CFLAGS=-W -Wall -ansi -pedantic -O0 -g
 THREADS=-lpthread
@@ -11,7 +12,7 @@ all: $(EXEC1) $(EXEC2) $(EXEC3)
 server: server.o equipement.o files.o utile.o
 	$(CC) -o $@ $^ $(THREADS)
 
-client: client.o files.o utile.o
+client: client.o service.o files.o utile.o
 	$(CC) -o $@ $^ $(THREADS)
 
 xmlmanager: xmlmanager.o
