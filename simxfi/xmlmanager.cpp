@@ -5,7 +5,7 @@ Une fonction permet de vérifier s'il y a des modifications dans le répertoire(
 En cas de modification dans le répertoire une mise à jour du fichier XML principal est effectuée
 
 Note-1:Ce programme est considéré comme un daemon il doit être lancé en parallèle des autres programmes sur chaque équipement
-Note-2:Ce programme n'est pas figé et peut être modifié pour être adapté à tous fichiers XML
+Note-2:Ce programme correspond a une structure particulière de fichier XML
 
 ****************************************************************************************************************************************************/
 #include "xmlmanager.h"
@@ -28,12 +28,16 @@ int countFiles(void)
 	DIR * dir = NULL;
 	dir = opendir("xmlFiles");
 	int nbf = 0;
-	struct dirent* file = NULL;
-
-	while ((file = readdir(dir)) != NULL)
+	
+	if (dir != NULL)
 	{
-		if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0 && strcmp(file->d_name, FINAL_FILE) != 0)
-			nbf++;
+		struct dirent* file = NULL;
+
+		while ((file = readdir(dir)) != NULL)
+		{
+			if (strcmp(file->d_name, ".")!= 0 && strcmp(file->d_name, "..")!=0 && strcmp(file->d_name, FINAL_FILE) != 0)
+				nbf++;
+		}
 	}
 	if (closedir(dir) == -1)
 		exit(-1);
@@ -154,12 +158,12 @@ void update(char *docName)
 	int modif = 0;
 	
 	if (doc == NULL) {
-		fprintf(stderr, "Le documents %s n'a pas pu être ouvert \n", docName);
+		fprintf(stderr, "Le document %s n'a pas pu être ouvert \n", docName);
 		return;
 	}
 	else
 		if (doc2 == NULL){
-			fprintf(stderr, "Le documents final.xml n'a pas pu être ouvert \n");
+			fprintf(stderr, "Le document final.xml n'a pas pu être ouvert \n");
 			return;
 		}
 	cur = xmlDocGetRootElement(doc);
