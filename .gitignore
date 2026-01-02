@@ -1,3 +1,2 @@
 #fichier à ignorer
-client
-server
+build/*
